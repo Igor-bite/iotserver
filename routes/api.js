@@ -91,6 +91,10 @@ class Device {
   }
 }
 
+function remove_device(id) {
+  fs.rm('./devices/' + id, { recursive: true }, () => {});
+}
+
 function restoreDevices() {
   const devicesDir = './devices';
   if (!fs.existsSync(devicesDir)) {
@@ -154,13 +158,23 @@ router.get('/make/:name', function(req, res) {
       (data) => console.log(data.toString())
   );
 
-  devices.push(new Device(id, req.params.name))
+  devices.push(new Device(id, req.params.name));
 
   res.send('Token for device ' + req.params.name + ' is:   ' + id);
 });
 
+router.get('/delete/:id', function(req, res) {
+  const index = devices.findIndex(d => d.id === req.params.id);
+  const device = devices.find(d => d.id === req.params.id);
+
+  remove_device(device.id);
+  devices.splice(index, 1);
+  // const device = devices[index]
+  res.send('Device ' + device.name + ' was removed');
+});
+
 router.get('/devices', function(req, res) {
-  res.send(devices)
+  res.send(devices);
 });
 
 module.exports = router;
