@@ -2,95 +2,25 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs'); // module File System
 const { readdirSync } = require('fs') // function for getting directories
-const { spawn } = require('child_process'); // module for executing cmd scripts
+const { spawn } = require('child_process');
+const path = require("path"); // module for executing cmd scripts
+
+const multer = require('multer');
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './devices/' + req.params.id + '/');
+  },
+  filename: function (req, file, cb) {
+    cb(null, "image.jpg")
+  }
+})
+const upload = multer({storage: storage})
 
 let devices = [];
 
+const Device = require('../models/device')
+
 restoreDevices(); // restores all devices data
-
-class Port {
-  constructor(name, value) {
-    this.name = name;
-    this.value = value;
-  }
-}
-
-class Device {
-  id
-  name
-  read
-  response
-  ports = []
-
-  constructor(id, name) {
-    this.id = id;
-    this.name = name;
-    this.read = true;
-    this.ports = [];
-
-    const dir = './devices/' + id;
-
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir);
-      this.save();
-    }
-  }
-
-  save() {
-    fs.writeFile('./devices/' + this.id + '/device.json', JSON.stringify(this), function (err) {
-      if (err) {
-        return console.log(err);
-      }
-    });
-  }
-
-  get id() {
-    return this.id;
-  }
-
-  get name() {
-    return this.name;
-  }
-
-  // GETTERS
-  get read() {
-    return this.read;
-  }
-
-  get response() {
-    return this.response;
-  }
-
-  get ports() {
-    return this.ports;
-  }
-
-  set id(id) {
-    this.id = id;
-  }
-
-  // SETTERS
-  set name(name) {
-    this.name = name;
-    this.save();
-  }
-
-  set read(r) {
-    this.read = r;
-    this.save();
-  }
-
-  set response(r) {
-    this.response = r;
-    this.save();
-  }
-
-  set ports(p) {
-    this.ports = p;
-    this.save();
-  }
-}
-
 function remove_device(id) {
   fs.rm('./devices/' + id, { recursive: true }, () => {});
 }
@@ -163,7 +93,7 @@ router.get('/make/:name', function(req, res) {
   res.send('Token for device ' + req.params.name + ' is:   ' + id);
 });
 
-router.get('/delete/:id', function(req, res) {
+router.get('/:id/delete', function(req, res) {
   const index = devices.findIndex(d => d.id === req.params.id);
   const device = devices.find(d => d.id === req.params.id);
 
@@ -171,6 +101,29 @@ router.get('/delete/:id', function(req, res) {
   devices.splice(index, 1);
   // const device = devices[index]
   res.send('Device ' + device.name + ' was removed');
+});
+
+router.post('/:id/image', upload.single('deviceImage'), (req, res, next) => {
+  res.send('done');
+});
+
+router.get('/:id/image', function(req, res) {
+  console.log(req.params.id)
+  let options = {
+    root: path.join(require.main.path),
+    dotfiles: 'deny',
+    headers: {
+      'x-timestamp': Date.now(),
+      'x-sent': true
+    }
+  }
+  let device_image_path = 'devices/' + req.params.id + '/image.jpg'
+
+  res.sendFile(device_image_path, options, function (err) {
+    if (err) {
+      console.log(err)
+    }
+  });
 });
 
 router.get('/devices', function(req, res) {
