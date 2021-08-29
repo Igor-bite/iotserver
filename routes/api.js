@@ -18,8 +18,6 @@ const upload = multer({storage: storage})
 
 let devices = [];
 
-const Device = require('../models/device')
-
 restoreDevices(); // restores all devices data
 function remove_device(id) {
   fs.rm('./devices/' + id, { recursive: true }, () => {});
@@ -163,3 +161,86 @@ function generate_token(bits, base) {
   }
   else return res;
 };
+
+class Device {
+  id
+  name
+  read
+  response
+  ports = []
+
+  constructor(id, name) {
+    this.id = id;
+    this.name = name;
+    this.read = true;
+    this.ports = [];
+
+    const dir = './devices/' + id;
+
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+      this.save();
+    }
+  }
+
+  save() {
+    fs.writeFile('./devices/' + this.id + '/device.json', JSON.stringify(this), function (err) {
+      if (err) {
+        return console.log(err);
+      }
+    });
+  }
+
+  get id() {
+    return this.id;
+  }
+
+  get name() {
+    return this.name;
+  }
+
+  // GETTERS
+  get read() {
+    return this.read;
+  }
+
+  get response() {
+    return this.response;
+  }
+
+  get ports() {
+    return this.ports;
+  }
+
+  set id(id) {
+    this.id = id;
+  }
+
+  // SETTERS
+  set name(name) {
+    this.name = name;
+    this.save();
+  }
+
+  set read(r) {
+    this.read = r;
+    this.save();
+  }
+
+  set response(r) {
+    this.response = r;
+    this.save();
+  }
+
+  set ports(p) {
+    this.ports = p;
+    this.save();
+  }
+}
+
+class Port {
+  constructor(name, value) {
+    this.name = name;
+    this.value = value;
+  }
+}
